@@ -21,8 +21,38 @@ class PetAdoptionTablePlugin
     // This first hook only runs when the plugin is activated
     add_action('activate_new-database-table/new-database-table.php', array($this, 'onActivate'));
     // add_action('admin_head', array($this, 'onAdminRefresh'));
+    // below action name derives from what we created in template-pets.php:
+    add_action('admin_post_createpet', [$this, 'createPet']);
+    add_action('admin_post_deletepet', [$this, 'deletePet']);
     add_action('wp_enqueue_scripts', array($this, 'loadAssets'));
     add_filter('template_include', array($this, 'loadTemplate'), 99);
+  }
+
+  function createPet()
+  {
+    if (current_user_can('administrator')) {
+      $pet = generatePet();
+      $pet['petname'] = sanitize_text_field($_POST['incomingpetname']);
+      global $wpdb;
+      $wpdb->insert($this->tablename, $pet);
+      wp_safe_redirect(site_url('/pet-adoption'));
+    } else {
+      wp_safe_redirect(site_url());
+    }
+    exit;
+  }
+
+  function deletePet()
+  {
+    if (current_user_can('administrator')) {
+      $id = sanitize_text_field($_POST['idtodelete']);
+      global $wpdb;
+      $wpdb->delete($this->tablename, array('id' => $id));
+      wp_safe_redirect(site_url('/pet-adoption'));
+    } else {
+      wp_safe_redirect(site_url());
+    }
+    exit;
   }
 
   function onActivate()
