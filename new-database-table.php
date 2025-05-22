@@ -56,6 +56,7 @@ class PetAdoptionTablePlugin
     }
   }
 
+  // This is a convenient way to load custom template, we're using it in a filter similar to filter for content
   function loadTemplate($template)
   {
     if (is_page('pet-adoption')) {
