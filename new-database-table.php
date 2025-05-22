@@ -7,39 +7,65 @@
   Author URI:
 */
 
-if( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
+if (! defined('ABSPATH')) exit; // Exit if accessed directly
 require_once plugin_dir_path(__FILE__) . 'inc/generatePet.php';
 
-class PetAdoptionTablePlugin {
-  function __construct() {
+class PetAdoptionTablePlugin
+{
+  function __construct()
+  {
+    global $wpdb;
+    $this->charset = $wpdb->get_charset_collate();
+    $this->tablename = $wpdb->prefix . "pets";
+
+    // This first hook only runs when the plugin is activated
     add_action('activate_new-database-table/new-database-table.php', array($this, 'onActivate'));
-    add_action('admin_head', array($this, 'onAdminRefresh'));
+    // add_action('admin_head', array($this, 'onAdminRefresh'));
     add_action('wp_enqueue_scripts', array($this, 'loadAssets'));
     add_filter('template_include', array($this, 'loadTemplate'), 99);
   }
 
-  function onActivate() {
-
+  function onActivate()
+  {
+    // Conveniently this function will protect from wiping the table upon RE-activation of plugin
+    // WP documentation describes the very specific sintax that the SQL statement should follow for dbDelta function
+    require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+    dbDelta("CREATE TABLE $this->tablename (
+    id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+    birthyear smallint(5) NOT NULL DEFAULT 0,
+    petweight smallint(5) NOT NULL DEFAULT 0,
+    favfood varchar(60) NOT NULL DEFAULT '',
+    favhobby varchar(60) NOT NULL DEFAULT '',
+    favcolor varchar(60) NOT NULL DEFAULT '',
+    petname varchar(60) NOT NULL DEFAULT '',
+    species varchar(60) NOT NULL DEFAULT '',
+    PRIMARY KEY  (id)
+    ) $this->charset;");
   }
 
-  function onAdminRefresh() {
-    
+  function onAdminRefresh()
+  {
+    global $wpdb;
+    $wpdb->insert($this->tablename, generatePet());
   }
 
-  function loadAssets() {
+  function loadAssets()
+  {
     if (is_page('pet-adoption')) {
       wp_enqueue_style('petadoptioncss', plugin_dir_url(__FILE__) . 'pet-adoption.css');
     }
   }
 
-  function loadTemplate($template) {
+  function loadTemplate($template)
+  {
     if (is_page('pet-adoption')) {
       return plugin_dir_path(__FILE__) . 'inc/template-pets.php';
     }
     return $template;
   }
 
-  function populateFast() {
+  function populateFast()
+  {
     $query = "INSERT INTO $this->tablename (`species`, `birthyear`, `petweight`, `favfood`, `favhobby`, `favcolor`, `petname`) VALUES ";
     $numberofpets = 100000;
     for ($i = 0; $i < $numberofpets; $i++) {
@@ -59,7 +85,6 @@ class PetAdoptionTablePlugin {
     global $wpdb;
     $wpdb->query($query);
   }
-
 }
 
 $petAdoptionTablePlugin = new PetAdoptionTablePlugin();
